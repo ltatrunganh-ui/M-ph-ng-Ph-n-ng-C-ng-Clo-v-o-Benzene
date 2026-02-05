@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mô phỏng Phản ứng Benzene + Cl2</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background-color: #fdfdfd;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            width: 850px;
+            height: 400px;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 5px 25px rgba(0,0,0,0.1);
+            position: relative;
+            border: 1px solid #eee;
+            margin-bottom: 20px;
+            overflow: hidden;
+        }
+
+        svg { width: 100%; height: 100%; }
+
+        /* Style cho văn bản */
+        .formula-text { font-size: 24px; font-weight: bold; fill: #333; }
+        .subscript { font-size: 16px; baseline-shift: sub; }
+        .label { font-size: 18px; fill: #555; }
+
+        /* Benzene ban đầu */
+        #benzene-ring {
+            fill: none;
+            stroke: #333;
+            stroke-width: 3;
+            transition: 0.5s;
+        }
+        #aromatic-circle {
+            fill: none;
+            stroke: #333;
+            stroke-width: 2;
+            transition: opacity 1s;
+        }
+
+        /* Clo nguyên tử */
+        .cl-atom {
+            fill: #2ecc71;
+            stroke: #27ae60;
+            stroke-width: 1;
+            opacity: 0;
+            transition: transform 1.5s cubic-bezier(0.17, 0.67, 0.83, 0.67), opacity 0.5s;
+        }
+
+        .cl-text {
+            font-size: 14px;
+            fill: white;
+            font-weight: bold;
+            pointer-events: none;
+            opacity: 0;
+            transition: transform 1.5s cubic-bezier(0.17, 0.67, 0.83, 0.67), opacity 0.5s;
+        }
+
+        /* Các liên kết Cl mới */
+        .cl-bond {
+            stroke: #333;
+            stroke-width: 2;
+            opacity: 0;
+            transition: opacity 0.5s;
+        }
+
+        /* Hiệu ứng ánh sáng */
+        #light-effect {
+            fill: yellow;
+            opacity: 0;
+            transition: opacity 0.3s;
+        }
+
+        .controls { display: flex; gap: 15px; }
+        button {
+            padding: 12px 25px;
+            font-size: 16px;
+            cursor: pointer;
+            border: none;
+            border-radius: 8px;
+            font-weight: bold;
+            transition: 0.3s;
+        }
+        #reactBtn { background: #f1c40f; color: #333; }
+        #reactBtn:hover { background: #f39c12; }
+        #resetBtn { background: #e74c3c; color: white; }
+        
+        .status {
+            margin-top: 15px;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+    </style>
+</head>
+<body>
+
+    <h2>Mô phỏng Phản ứng Cộng Clo vào Benzene</h2>
+
+    <div class="container">
+        <svg viewBox="0 0 850 400">
+            <!-- Hiệu ứng ánh sáng (nền) -->
+            <rect id="light-effect" x="0" y="0" width="850" height="400" fill="url(#lightGradient)" opacity="0"/>
+            <defs>
+                <radialGradient id="lightGradient">
+                    <stop offset="0%" stop-color="rgba(255,255,0,0.2)"/>
+                    <stop offset="100%" stop-color="rgba(255,255,255,0)"/>
+                </radialGradient>
+            </defs>
+
+            <!-- BÊN TRÁI: CHẤT PHẢN ỨNG -->
+            <g transform="translate(100, 150)">
+                <!-- Benzene -->
+                <polygon id="benzene-ring-left" points="50,0 93.3,25 93.3,75 50,100 6.7,75 6.7,25" fill="none" stroke="#333" stroke-width="3"/>
+                <circle cx="50" cy="50" r="30" fill="none" stroke="#333" stroke-width="2"/>
+                
+                <text x="110" y="60" class="formula-text">+ 3 Cl<tspan class="subscript">2</tspan></text>
+            </g>
+
+            <!-- GIỮA: MŨI TÊN -->
+            <g transform="translate(360, 200)">
+                <line x1="0" y1="0" x2="120" y2="0" stroke="#333" stroke-width="3" />
+                <path d="M110 -5 L120 0 L110 5" fill="none" stroke="#333" stroke-width="3" />
+                <text x="30" y="-15" class="label">ánh sáng</text>
+            </g>
+
+            <!-- BÊN PHẢI: SẢN PHẨM (Mô phỏng tại đây) -->
+            <g id="product-area" transform="translate(600, 150)">
+                <!-- Vòng Hexagon -->
+                <polygon id="product-ring" points="50,0 93.3,25 93.3,75 50,100 6.7,75 6.7,25" fill="none" stroke="#333" stroke-width="3"/>
+                <circle id="aromatic-circle" cx="50" cy="50" r="30" />
+
+                <!-- Các liên kết Cl (ẩn ban đầu) -->
+                <line class="cl-bond" x1="50" y1="0" x2="50" y2="-30" />
+                <line class="cl-bond" x1="93.3" y1="25" x2="118.3" y2="10.5" />
+                <line class="cl-bond" x1="93.3" y1="75" x2="118.3" y2="89.5" />
+                <line class="cl-bond" x1="50" y1="100" x2="50" y2="130" />
+                <line class="cl-bond" x1="6.7" y1="75" x2="-18.3" y2="89.5" />
+                <line class="cl-bond" x1="6.7" y1="25" x2="-18.3" y2="10.5" />
+
+                <!-- Nguyên tử Cl bay đến -->
+                <!-- Cl1 --> <circle id="cl1" class="cl-atom" cx="-300" cy="50" r="12" /> <text id="t1" class="cl-text" x="-308" y="55">Cl</text>
+                <!-- Cl2 --> <circle id="cl2" class="cl-atom" cx="-310" cy="60" r="12" /> <text id="t2" class="cl-text" x="-318" y="65">Cl</text>
+                <!-- Cl3 --> <circle id="cl3" class="cl-atom" cx="-290" cy="40" r="12" /> <text id="t3" class="cl-text" x="-298" y="45">Cl</text>
+                <!-- Cl4 --> <circle id="cl4" class="cl-atom" cx="-320" cy="70" r="12" /> <text id="t4" class="cl-text" x="-328" y="75">Cl</text>
+                <!-- Cl5 --> <circle id="cl5" class="cl-atom" cx="-280" cy="30" r="12" /> <text id="t5" class="cl-text" x="-288" y="35">Cl</text>
+                <!-- Cl6 --> <circle id="cl6" class="cl-atom" cx="-300" cy="80" r="12" /> <text id="t6" class="cl-text" x="-308" y="85">Cl</text>
+
+                <text id="product-name" x="0" y="170" class="label" style="opacity:0">hexacloran</text>
+            </g>
+        </svg>
+    </div>
+
+    <div class="controls">
+        <button id="reactBtn">Chiếu sáng & Phản ứng</button>
+        <button id="resetBtn">Làm lại</button>
+    </div>
+
+    <div id="statusText" class="status">Sẵn sàng. Nhấn nút để bắt đầu.</div>
+
+    <script>
+        const reactBtn = document.getElementById('reactBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const lightEffect = document.getElementById('light-effect');
+        const aromaticCircle = document.getElementById('aromatic-circle');
+        const clBonds = document.querySelectorAll('.cl-bond');
+        const clAtoms = document.querySelectorAll('.cl-atom');
+        const clTexts = document.querySelectorAll('.cl-text');
+        const productName = document.getElementById('product-name');
+        const statusText = document.getElementById('statusText');
+
+        // Tọa độ các đỉnh hexagon (tương đối trong group product-area)
+        const vertices = [
+            {x: 50, y: -30},     // Top
+            {x: 118.3, y: 10.5}, // Top Right
+            {x: 118.3, y: 89.5}, // Bottom Right
+            {x: 50, y: 130},    // Bottom
+            {x: -18.3, y: 89.5}, // Bottom Left
+            {x: -18.3, y: 10.5}  // Top Left
+        ];
+
+        reactBtn.addEventListener('click', () => {
+            reactBtn.disabled = true;
+            statusText.innerText = "Đang chiếu sáng... Phân tử Cl2 tách ra!";
+            
+            // 1. Bật ánh sáng
+            lightEffect.style.opacity = "1";
+
+            // 2. Hiện các nguyên tử Cl và di chuyển chúng
+            setTimeout(() => {
+                clAtoms.forEach((atom, i) => {
+                    atom.style.opacity = "1";
+                    // Tính toán vector di chuyển từ vị trí hiện tại đến đỉnh
+                    const targetX = vertices[i].x;
+                    const targetY = vertices[i].y;
+                    const startX = parseFloat(atom.getAttribute('cx'));
+                    const startY = parseFloat(atom.getAttribute('cy'));
+                    
+                    atom.style.transform = `translate(${targetX - startX}px, ${targetY - startY}px)`;
+                });
+
+                clTexts.forEach((text, i) => {
+                    text.style.opacity = "1";
+                    const targetX = vertices[i].x - 8;
+                    const targetY = vertices[i].y + 5;
+                    const startX = parseFloat(text.getAttribute('x'));
+                    const startY = parseFloat(text.getAttribute('y'));
+                    text.style.transform = `translate(${targetX - startX}px, ${targetY - startY}px)`;
+                });
+
+                statusText.innerText = "Các nguyên tử Cl đang tấn công vào các liên kết đôi...";
+            }, 500);
+
+            // 3. Phá vỡ vòng liên hợp và hiện liên kết mới
+            setTimeout(() => {
+                aromaticCircle.style.opacity = "0";
+                clBonds.forEach(bond => bond.style.opacity = "1");
+                productName.style.opacity = "1";
+                statusText.innerText = "Phản ứng hoàn tất! Tạo thành Hexacloran (Thuốc trừ sâu 666).";
+                lightEffect.style.opacity = "0";
+            }, 2000);
+        });
+
+        resetBtn.addEventListener('click', () => {
+            location.reload();
+        });
+    </script>
+</body>
+</html>
